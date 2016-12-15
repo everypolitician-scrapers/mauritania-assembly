@@ -31,11 +31,4 @@ def scrape_list(url)
   end
 end
 
-term = {
-  id: 12,
-  name: '12th National Assembly',
-  start_date: '2013-12-21',
-}
-ScraperWiki.save_sqlite([:id], term, 'terms')
-
 scrape_list('http://www.assembleenationale.mr/index.php?option=com_content&view=article&id=352&Itemid=164&lang=en')
