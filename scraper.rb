@@ -10,27 +10,54 @@ require 'open-uri/cached'
 OpenURI::Cache.cache_path = '.cache'
 # require 'scraped_page_archive/open-uri'
 
-def noko_for(url)
-  Nokogiri::HTML(open(url).read)
-end
-
-def scrape_list(url)
-  noko = noko_for(url)
-  noko.css('.MsoTableGrid tr').drop(1).each do |row|
-    tds = row.css('td')
-    data = {
-      id:    tds[0].text.tidy,
-      name:  tds[1].text.tidy,
-      area:  tds[2].text.tidy,
-      photo: tds[3].css('img[src*="assembleenationale"]/@src').text,
-      party: 'unknown',
-      term:  12,
-      # source: url,
-    }
-    puts data.reject { |_, v| v.to_s.empty? }.sort_by { |k, _| k }.to_h if ENV['MORPH_DEBUG']
-    ScraperWiki.save_sqlite(%i[name term], data)
+class MembersPage < Scraped::HTML
+  field :members do
+    noko.css('.MsoTableGrid tr').drop(1).map do |row|
+      fragment(row => MemberRow).to_h
+    end
   end
 end
 
+class MemberRow < Scraped::HTML
+  field :id do
+    tds[0].text.tidy
+  end
+
+  field :name do
+    tds[1].text.tidy
+  end
+
+  field :area do
+    tds[2].text.tidy
+  end
+
+  field :photo do
+    tds[3].css('img[src*="assembleenationale"]/@src').text
+  end
+
+  field :party do
+    'unknown'
+  end
+
+  field :term do
+    12
+  end
+
+  private
+
+  def tds
+    noko.css('td')
+  end
+end
+
+def scraper(h)
+  url, klass = h.to_a.first
+  klass.new(response: Scraped::Request.new(url: url).response)
+end
+
+url = 'http://www.assembleenationale.mr/index.php?option=com_content&view=article&id=352&Itemid=164&lang=en'
+data = scraper(url => MembersPage).members
+data.each { |r| puts r.reject { |_, v| v.to_s.empty? }.sort_by { |k, _| k }.to_h } if ENV['MORPH_DEBUG']
+
 ScraperWiki.sqliteexecute('DROP TABLE data') rescue nil
-scrape_list('http://www.assembleenationale.mr/index.php?option=com_content&view=article&id=352&Itemid=164&lang=en')
+ScraperWiki.save_sqlite(%i[name term], data)
