@@ -32,4 +32,5 @@ def scrape_list(url)
   end
 end
 
+ScraperWiki.sqliteexecute('DROP TABLE data') rescue nil
 scrape_list('http://www.assembleenationale.mr/index.php?option=com_content&view=article&id=352&Itemid=164&lang=en')
