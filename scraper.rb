@@ -2,13 +2,13 @@
 # encoding: utf-8
 # frozen_string_literal: true
 
-require 'scraperwiki'
-require 'nokogiri'
-require 'open-uri'
 require 'pry'
+require 'scraped'
+require 'scraperwiki'
 
 require 'open-uri/cached'
 OpenURI::Cache.cache_path = '.cache'
+# require 'scraped_page_archive/open-uri'
 
 def noko_for(url)
   Nokogiri::HTML(open(url).read)
@@ -19,9 +19,9 @@ def scrape_list(url)
   noko.css('.MsoTableGrid tr').drop(1).each do |row|
     tds = row.css('td')
     data = {
-      id:    tds[0].text.strip,
-      name:  tds[1].text.strip,
-      area:  tds[2].text.strip,
+      id:    tds[0].text.tidy,
+      name:  tds[1].text.tidy,
+      area:  tds[2].text.tidy,
       photo: tds[3].css('img[src*="assembleenationale"]/@src').text,
       party: 'unknown',
       term:  12,
